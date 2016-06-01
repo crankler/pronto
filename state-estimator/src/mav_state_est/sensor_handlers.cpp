@@ -5,6 +5,7 @@ using namespace Eigen;
 namespace MavStateEst {
 
 InsHandler::InsHandler(BotParam * _param, BotFrames * _frames) :
+    old_omega_i(Eigen::Vector3d::Zero()),
     accel_bias_update_online(true),
     gyro_bias_update_online(true),
     accel_bias_initial(Eigen::Vector3d::Zero()),
@@ -95,38 +96,47 @@ InsHandler::InsHandler(BotParam * _param, BotFrames * _frames) :
 ////////// Typical Micro Strain INS /////////////////
 RBISUpdateInterface * InsHandler::processMessage(const bot_core::ins_t * msg, RBIS state, RBIM cov)
 {
-  // get everything in the right frame
-  double body_accel[3];
-  bot_trans_apply_vec(&ins_to_body, msg->accel, body_accel);
-  Eigen::Map<Eigen::Vector3d> accelerometer(body_accel);
+  Eigen::Map<const Eigen::Vector3d> xdd_i(msg->accel);
+  Eigen::Map<const Eigen::Vector3d> omega_i(msg->gyro);
+
+  Eigen::Map<Eigen::Vector3d>bTi_t(ins_to_body.trans_vec);
+  Eigen::Quaterniond bTi_quat(ins_to_body.rot_quat[0],
+                              ins_to_body.rot_quat[1],
+                              ins_to_body.rot_quat[2],
+                              ins_to_body.rot_quat[3]);
+
+  Eigen::Vector3d xdd_b = bTi_quat * xdd_i;
+  Eigen::Vector3d omega_b = bTi_quat * omega_i;
+
+  Eigen::Vector3d omega_dot_i = (omega_i - old_omega_i) / dt;
+
+  old_omega_i = omega_i;
+
+  Eigen::Vector3d omega_dot_b = bTi_quat * omega_dot_i;
+
+  xdd_b -= omega_dot_b.cross(bTi_t);
+  xdd_b -= omega_b.cross(omega_b.cross(bTi_t));
 
 
-  // mfallon thinks this was incorrect as the addition of the translation seems wrong:
-  // experimentally the bias estimator estimates the body-imu translation (fixed may 2014):
-  // bot_trans_apply_vec(&ins_to_body, msg->gyro, body_gyro);
-  double body_gyro[3];
-  bot_quat_rotate_to(ins_to_body.rot_quat, msg->gyro, body_gyro);
-  Eigen::Map<Eigen::Vector3d> gyro(body_gyro);
+  RBISIMUProcessStep* update = new RBISIMUProcessStep(omega_b,
+                                                      xdd_b,
+                                                      cov_gyro,
+                                                      cov_accel,
+                                                      cov_gyro_bias,
+                                                      cov_accel_bias,
+                                                      dt,
+                                                      msg->utime);
 
-  RBISIMUProcessStep* update = new RBISIMUProcessStep(gyro,
-          accelerometer,
-          cov_gyro,
-          cov_accel,
-          cov_gyro_bias,
-          cov_accel_bias,
-          dt,
-          msg->utime);
+  // We reset the bias values to the original value, if requested
+  if(!gyro_bias_update_online) {
+      update->posterior_state.gyroBias() = gyro_bias_initial;
+  }
 
-    // Reset the bias values to the original value, if requested
-    if(!gyro_bias_update_online) {
-        update->posterior_state.gyroBias() = gyro_bias_initial;
-    }
+  if(!accel_bias_update_online) {
+      update->posterior_state.accelBias() = accel_bias_initial;
+  }
 
-    if(!accel_bias_update_online) {
-        update->posterior_state.accelBias() = accel_bias_initial;
-    }
-
-    return update;
+  return update;
 }
 
 bool InsHandler::processMessageInit(const bot_core::ins_t * msg,

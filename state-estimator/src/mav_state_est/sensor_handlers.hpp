@@ -83,6 +83,7 @@ protected:
   Eigen::Vector3d accel_bias_initial;
   bool accel_bias_recalc_at_start;
 
+  Eigen::Vector3d old_omega_i;
 };
 
 

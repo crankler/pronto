@@ -64,6 +64,7 @@ protected:
   double cov_gyro_bias;
 
   double dt;
+  double dt_initial;
 
   //initialization
   int num_to_init;
@@ -84,6 +85,7 @@ protected:
   bool accel_bias_recalc_at_start;
 
   Eigen::Vector3d old_omega_i;
+  uint64_t before;
 };
 
 

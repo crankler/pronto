@@ -5,7 +5,9 @@ using namespace Eigen;
 namespace MavStateEst {
 
 InsHandler::InsHandler(BotParam * _param, BotFrames * _frames) :
+    dt_initial(0),
     old_omega_i(Eigen::Vector3d::Zero()),
+    before(0),
     accel_bias_update_online(true),
     gyro_bias_update_online(true),
     accel_bias_initial(Eigen::Vector3d::Zero()),
@@ -25,7 +27,8 @@ InsHandler::InsHandler(BotParam * _param, BotFrames * _frames) :
   cov_accel_bias = bot_param_get_double_or_fail(_param, "state_estimator.ins.q_accel_bias");
   cov_accel_bias = bot_sq(cov_accel_bias);
 
-  dt = bot_param_get_double_or_fail(_param, "state_estimator.ins.timestep_dt"); // nominally dt = 0.01 for 100 Hz IMU messages
+  dt_initial = bot_param_get_double_or_fail(_param, "state_estimator.ins.timestep_dt"); // nominally dt = 0.01 for 100 Hz IMU messages
+
 
   // added for atlas: 3 notch filters
   atlas_filter = bot_param_get_boolean_or_fail(_param, "state_estimator.ins.atlas_filter");
@@ -98,6 +101,18 @@ RBISUpdateInterface * InsHandler::processMessage(const bot_core::ins_t * msg, RB
 {
   Eigen::Map<const Eigen::Vector3d> xdd_i(msg->accel);
   Eigen::Map<const Eigen::Vector3d> omega_i(msg->gyro);
+
+  uint64_t now = msg->utime;
+  uint64_t udt = now - before;
+  dt = (double)udt / 1000000.0;
+  // don't allow more than 25% jitter
+  double max_jitter = 0.25*dt_initial;
+  double ddt = dt-dt_initial;
+  if(ddt > max_jitter || -ddt > max_jitter ){
+      dt = dt_initial;
+  }
+
+  before = now;
 
   Eigen::Map<Eigen::Vector3d>bTi_t(ins_to_body.trans_vec);
   Eigen::Quaterniond bTi_quat(ins_to_body.rot_quat[0],

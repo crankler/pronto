@@ -13,16 +13,10 @@ set(REQUIRED_LIBS bot2-core
 	bot2-param-client
 	bot2-frames
 	eigen-utils
-	laser-util
-	laser-sim3d
-	octomap-util
-        path-util
-        lcmtypes_vicon
         lcmtypes_pronto
 #    lcmtypes_microstrain
 #    lcmtypes_${POD_NAME}
 #    lcmtypes_mav-lcmtypes
-    estimate_tools # added by mfallon for drc data filtering
     )
 pods_use_pkg_config_packages(mav-state-est ${REQUIRED_LIBS})
 pods_install_libraries(mav-state-est)

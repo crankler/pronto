@@ -13,7 +13,13 @@ LCMFrontEnd::LCMFrontEnd(const std::string & in_log_fname, const std::string & o
   state_estimator = NULL;
 
   bool running_from_log = !in_log_fname.empty();
-  bool running_to_log = !out_log_fname.empty();
+  // according to the official documentation, LCM has three provider types:
+  // udpm, file, and memq. If the string does not contain these protocols, then
+  // we will treat the string as a filename.
+  bool running_to_log = ! (!out_log_fname.empty() &&
+                           (out_log_fname.rfind("udpm://", 0) == 0 ||
+                           out_log_fname.rfind("file://", 0) == 0 ||
+                           out_log_fname.rfind("memq://", 0) == 0));
 
   if (running_from_log && in_log_fname == out_log_fname) {
     fprintf(stderr, "must specify different logname for output %s!\n", out_log_fname.c_str());

@@ -51,7 +51,7 @@ LCMFrontEnd::LCMFrontEnd(const std::string & in_log_fname, const std::string & o
     }
   }
   else {
-    lcm_pub = new lcm::LCM(); // mfallon publish back to lcm if run from log
+    lcm_pub = new lcm::LCM(out_log_fname); // mfallon publish back to lcm if run from log
   }
 
   if (param_fname.empty()) {

@@ -21,6 +21,7 @@ lcmtypes_build()
 
 # mav modules :
 add_subdirectory(src/mav_est_fovis)
+add_subdirectory(src/mav_est_realsense)
 #add_subdirectory(src/mav_est_legodo)
 #add_subdirectory(src/pose_meas)
 

@@ -4,6 +4,7 @@ add_executable(se-fusion fusion.cpp)
 pods_use_pkg_config_packages(se-fusion
     mav-state-est
     mav-est-fovis
+    mav-est-realsense
     gpf-laser-lib
     mav-est-legodo
     mav-est-yawlock

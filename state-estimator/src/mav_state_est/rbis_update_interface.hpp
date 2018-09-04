@@ -8,7 +8,7 @@ namespace MavStateEst {
 class RBISUpdateInterface {
 public:
   typedef enum {
-    ins, gps, vicon, laser, laser_gpf, scan_matcher, optical_flow, reset, invalid, rgbd, fovis, legodo, pose_meas, altimeter, airspeed, sideslip, init_message, viewer, yawlock
+    ins, gps, vicon, laser, laser_gpf, scan_matcher, optical_flow, reset, invalid, rgbd, fovis, realsense, legodo, pose_meas, altimeter, airspeed, sideslip, init_message, viewer, yawlock
   } sensor_enum;
 
   int64_t utime;
